@@ -203,4 +203,7 @@ INSERT INTO producto_adicion (id_producto, id_adicion) VALUES
 (8, 5);
 
 
+## Evidencia
+https://i.ibb.co/N6CCntkx/Captura-desde-2025-11-07-17-00-44.png
+
 
