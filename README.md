@@ -34,6 +34,10 @@ Herramientas de Diseño: MySQL Workbench u otras herramientas de diseño de base
 # Solucion
 # Modelo Logico
 https://i.ibb.co/8Z0Grs5/Captura-desde-2025-11-07-15-53-48.png
+
+# ejemplo de funcionamiento
+https://i.ibb.co/N6CCntkx/Captura-desde-2025-11-07-17-00-44.png
+
 # Codigo Mysql
 
 
