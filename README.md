@@ -36,6 +36,7 @@ Herramientas de Diseño: MySQL Workbench u otras herramientas de diseño de base
 https://i.ibb.co/8Z0Grs5/Captura-desde-2025-11-07-15-53-48.png
 # Codigo Mysql
 
+
 DROP DATABASE IF EXISTS campuslands_pizzas;
 CREATE DATABASE campuslands_pizzas;
 USE campuslands_pizzas;
@@ -202,8 +203,155 @@ INSERT INTO producto_adicion (id_producto, id_adicion) VALUES
 (3, 4),
 (8, 5);
 
+-- ============================================
+-- CONSULTAS SOLICITADAS (README)
+-- ============================================
 
-## Evidencia
-https://i.ibb.co/N6CCntkx/Captura-desde-2025-11-07-17-00-44.png
+-- 1. Productos más vendidos
+SELECT p.nombre, SUM(d.cantidad) AS total_vendidos
+FROM detalle_pedidos d
+JOIN productos p ON d.id_producto = p.id_producto
+GROUP BY p.nombre
+ORDER BY total_vendidos DESC;
+
+-- 2. Total de ingresos generados por cada combo
+SELECT c.nombre, c.precio, COUNT(cp.id_combo) AS veces_vendido, (c.precio * COUNT(cp.id_combo)) AS total_ingresos
+FROM combos c
+LEFT JOIN combo_producto cp ON c.id_combo = cp.id_combo
+GROUP BY c.id_combo;
+
+-- 3. Pedidos realizados para recoger vs. comer en la pizzería
+SELECT tipo_pedido, COUNT(*) AS cantidad_pedidos
+FROM pedidos
+GROUP BY tipo_pedido;
+
+-- 4. Adiciones más solicitadas
+SELECT a.nombre, COUNT(pa.id_adicion) AS total
+FROM producto_adicion pa
+JOIN adicion a ON pa.id_adicion = a.id_adicion
+GROUP BY a.nombre
+ORDER BY total DESC;
+
+-- 5. Cantidad total de productos vendidos por categoría
+SELECT p.tipo, SUM(d.cantidad) AS total_vendidos
+FROM detalle_pedidos d
+JOIN productos p ON d.id_producto = p.id_producto
+GROUP BY p.tipo;
+
+-- 6. Promedio de pizzas pedidas por cliente
+SELECT c.nombre, AVG(d.cantidad) AS promedio_pizzas
+FROM pedidos pe
+JOIN detalle_pedidos d ON pe.id_pedido = d.id_pedido
+JOIN productos p ON d.id_producto = p.id_producto
+JOIN clientes c ON pe.id_cliente = c.id_cliente
+WHERE p.tipo = 'Pizza'
+GROUP BY c.nombre;
+
+-- 7. Total de ventas por día de la semana
+SELECT DAYNAME(fecha) AS dia_semana, SUM(d.cantidad * d.precio_unitario) AS total_ventas
+FROM pedidos p
+JOIN detalle_pedidos d ON p.id_pedido = d.id_pedido
+GROUP BY dia_semana;
+
+-- 8. Cantidad de panzarottis vendidos con extra queso
+SELECT COUNT(*) AS panzarottis_extra_queso
+FROM detalle_pedidos dp
+JOIN productos p ON dp.id_producto = p.id_producto
+JOIN producto_adicion pa ON p.id_producto = pa.id_producto
+JOIN adicion a ON pa.id_adicion = a.id_adicion
+WHERE p.nombre LIKE '%Calzone%' AND a.nombre = 'Extra Queso';
+
+-- 9. Pedidos que incluyen bebidas como parte de un combo
+SELECT DISTINCT p.id_pedido
+FROM detalle_pedidos d
+JOIN productos pr ON d.id_producto = pr.id_producto
+WHERE pr.tipo = 'Bebida';
+
+-- 10. Clientes que han realizado más de 5 pedidos en el último mes
+SELECT c.nombre, COUNT(p.id_pedido) AS total_pedidos
+FROM pedidos p
+JOIN clientes c ON p.id_cliente = c.id_cliente
+WHERE p.fecha >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+GROUP BY c.id_cliente
+HAVING total_pedidos > 5;
+
+-- 11. Ingresos totales por productos no elaborados (bebidas, postres, etc.)
+SELECT SUM(d.cantidad * d.precio_unitario) AS total_ingresos_no_elaborados
+FROM detalle_pedidos d
+JOIN productos p ON d.id_producto = p.id_producto
+WHERE p.tipo IN ('Bebida', 'Postre');
+
+-- 12. Promedio de adiciones por pedido
+SELECT AVG(total_adiciones) AS promedio_adiciones
+FROM (
+    SELECT p.id_pedido, COUNT(pa.id_adicion) AS total_adiciones
+    FROM pedidos p
+    JOIN detalle_pedidos dp ON p.id_pedido = dp.id_pedido
+    JOIN producto_adicion pa ON dp.id_producto = pa.id_producto
+    GROUP BY p.id_pedido
+) AS sub;
+
+-- 13. Total de combos vendidos en el último mes
+SELECT COUNT(*) AS combos_vendidos_ultimo_mes
+FROM combos c
+JOIN combo_producto cp ON c.id_combo = cp.id_combo
+WHERE NOW() >= DATE_SUB(NOW(), INTERVAL 1 MONTH);
+
+-- 14. Clientes con pedidos para recoger y en tienda
+SELECT c.nombre
+FROM pedidos p
+JOIN clientes c ON p.id_cliente = c.id_cliente
+GROUP BY c.id_cliente
+HAVING SUM(p.tipo_pedido = 'Domicilio') > 0 AND SUM(p.tipo_pedido = 'En tienda') > 0;
+
+-- 15. Total de productos personalizados con adiciones
+SELECT COUNT(DISTINCT pa.id_producto) AS productos_personalizados
+FROM producto_adicion pa;
+
+-- 16. Pedidos con más de 3 productos diferentes
+SELECT p.id_pedido, COUNT(DISTINCT d.id_producto) AS total_productos
+FROM pedidos p
+JOIN detalle_pedidos d ON p.id_pedido = d.id_pedido
+GROUP BY p.id_pedido
+HAVING total_productos > 3;
+
+-- 17. Promedio de ingresos generados por día
+SELECT AVG(total_dia) AS promedio_diario
+FROM (
+    SELECT DATE(p.fecha) AS dia, SUM(d.cantidad * d.precio_unitario) AS total_dia
+    FROM pedidos p
+    JOIN detalle_pedidos d ON p.id_pedido = d.id_pedido
+    GROUP BY dia
+) AS sub;
+
+-- 18. Clientes que han pedido pizzas con adiciones en más del 50% de sus pedidos
+SELECT c.nombre
+FROM clientes c
+JOIN pedidos p ON c.id_cliente = p.id_cliente
+JOIN detalle_pedidos d ON p.id_pedido = d.id_pedido
+JOIN productos pr ON d.id_producto = pr.id_producto
+JOIN producto_adicion pa ON pr.id_producto = pa.id_producto
+WHERE pr.tipo = 'Pizza'
+GROUP BY c.id_cliente
+HAVING (COUNT(DISTINCT p.id_pedido) / (SELECT COUNT(*) FROM pedidos WHERE id_cliente = c.id_cliente)) > 0.5;
+
+-- 19. Porcentaje de ventas provenientes de productos no elaborados
+SELECT 
+    (SUM(CASE WHEN p.tipo IN ('Bebida', 'Postre') THEN d.cantidad * d.precio_unitario ELSE 0 END) / 
+     SUM(d.cantidad * d.precio_unitario)) * 100 AS porcentaje_no_elaborados
+FROM detalle_pedidos d
+JOIN productos p ON d.id_producto = p.id_producto;
+
+-- 20. Día de la semana con mayor número de pedidos para recoger
+SELECT DAYNAME(fecha) AS dia_semana, COUNT(*) AS cantidad
+FROM pedidos
+WHERE tipo_pedido = 'Domicilio'
+GROUP BY dia_semana
+ORDER BY cantidad DESC
+LIMIT 1;
+
+
+
+
 
 
