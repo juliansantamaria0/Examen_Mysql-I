@@ -204,7 +204,7 @@ INSERT INTO producto_adicion (id_producto, id_adicion) VALUES
 (8, 5);
 
 -- ============================================
--- CONSULTAS SOLICITADAS (README)
+-- CONSULTAS 
 -- ============================================
 
 -- 1. Productos más vendidos
